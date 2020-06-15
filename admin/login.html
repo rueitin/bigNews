@@ -78,13 +78,15 @@
             password: password
           },
           success: function (backData) {
+            localStorage.setItem('token',backData.token);
+            
             $('.modal-body>p').text(backData.msg);
             $('#myModal').modal();
             if (backData.code == 200) {
               $('#myModal').on('hidden.bs.modal', function (e) {
                 $('.modal-body>p').text(backData.msg);
                 $('#myModal').modal();
-                window.location.href = './index.html'
+                window.location.href = './index.html';
               })
             }
           }
