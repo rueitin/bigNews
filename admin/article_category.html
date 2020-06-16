@@ -43,7 +43,7 @@
                 <tfoot>
                     <tr>
                         <td colspan="3" class="text-center">
-                            <a href="javascript:void(0)" class="btn btn-success" id="xinzengfenlei" data-toggle="modal"
+                            <a href="#" class="btn btn-success" id="xinzengfenlei" data-toggle="modal"
                                 data-target="#myModal">新增分类</a>
                         </td>
                     </tr>
@@ -51,5 +51,166 @@
             </table>
         </div>
     </div>
+
+    <!-- 模态框 -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">New message</h4>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <input type="hidden" name="" id="category_id">
+                        <div class="form-group">
+                            <label for="recipient-name" class="control-label">分类名称:</label>
+                            <input type="text" class="form-control" id="recipient-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="message-text" class="control-label">分类别名:</label>
+                            <input type="text" class="form-control" id="message-text"></input>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default btn-cancel" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="addOrEdit">新增</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script id="categoryTemp" type="text/html">
+        {{each data}}
+        <tr>
+            <td>{{$value.name}}</td>
+            <td>{{$value.slug}}</td>
+            <td class="text-center">
+                <a href="javascript:void(0);" data-id="{{$value.id}}" data-toggle="modal" data-target="#myModal"
+                    class=" btn btn-info btn-xs btn-save">编辑</a>
+                <a href="javascript:void(0);" data-id="{{$value.id}}" class="btn btn-danger btn-xs btn-delete">删除</a>
+            </td>
+        </tr>
+        {{/each}}
+    </script>
+    <script src="./libs/http.js"></script>
+    <script>
+        $(function () {
+            function getData() {
+                $.ajax({
+                    type: 'get',
+                    url: BigNew.category_list,
+                    success: function (backData) {
+                        if (backData.code == 200) {
+                            var resHtml = template('categoryTemp', backData);
+                            $('tbody').html(resHtml);
+                        };
+                    }
+                });
+            };
+            getData();
+
+            $('#myModal').on('show.bs.modal', function (e) {
+                if (e.relatedTarget === $('#xinzengfenlei')[0]) {
+                    //新增
+                    $('#myModalLabel').text('新增分类');
+                    $('#addOrEdit').text('新增').addClass('btn-primary').removeClass('btn-success')
+                    $('#recipient-name').val('');
+                    $('#message-text').val('');
+
+                } else {
+                    //编辑
+                    $('#myModalLabel').text('编辑分类');
+                    $('#addOrEdit').text('编辑').addClass('btn-success').removeClass('btn-primary');
+                    var categoryId = $(e.relatedTarget).attr('data-id')
+                    var categoryName = $(e.relatedTarget).parent().prev().prev().text().trim();
+                    var categorySlug = $(e.relatedTarget).parent().prev().text().trim();
+
+                    $('#category_id').val(categoryId);
+                    $('#recipient-name').val(categoryName);
+                    $('#message-text').val(categorySlug);
+                }
+
+            })
+
+
+            $('#addOrEdit').on('click', function (e) {
+                if ($(this).hasClass('btn-primary')) {
+                    var categoryName = $('#recipient-name').val().trim();
+                    var categorySlug = $('#message-text').val().trim();
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.category_add,
+                        data: {
+                            name: categoryName,
+                            slug: categorySlug
+                        },
+                        success: function (backData) {
+                            if (backData.code == 201) {
+                                $('#myModal').modal('hide');
+                                getData();
+                                $('#recipient-name').val('');
+                                $('#message-text').val('');
+                            }
+                        }
+
+                    })
+                } else {
+                    //编辑
+                    var categoryId = $('#category_id').val().trim();
+                    var categoryName = $('#recipient-name').val().trim();
+                    var categorySlug = $('#message-text').val().trim();
+
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.category_edit,
+                        data: {
+                            id: categoryId,
+                            name: categoryName,
+                            slug: categorySlug
+                        },
+                        success: function (backData) {
+                            if (backData.code == 200) {
+                                $('#myModal').modal('hide');
+                                getData();
+                            }
+
+                        }
+                    })
+
+                }
+
+            });
+
+            // $('.btn-cancel').on('click', function () {
+            //     $('#myModal form')[0].reset();
+            // });
+
+
+            $('tbody').on('click', '.btn-delete', function (e) {
+                e.preventDefault();
+                if (confirm('你确定要删除吗?')) {
+                    var categoryId = $(this).attr('data-id');
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.category_delete,
+                        data: {
+                            id: categoryId
+                        },
+                        success: function (backData) {
+                            if (backData.code == 204) {
+                                alert('删除成功');
+                                $(this).parent().parent().remove();
+                            }
+
+                        }.bind(this)
+                    })
+                }
+            });
+        });
+    </script>
+</body>
 
 </html>
