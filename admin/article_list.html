@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="./css/iconfont.css">
     <link rel="stylesheet" href="./css/main.css">
     <script src="./libs/jquery-1.12.4.min.js"></script>
+    <script src="./libs/bootstrap/js/bootstrap.min.js"></script>
+    <script src="./libs/jquery.twbsPagination.js"></script>
     <!-- 引入模板引擎js文件 -->
     <script src="./libs/template-web.js"></script>
 </head>
@@ -69,9 +71,257 @@
                 </tbody>
             </table>
             <div class="row text-center">
+                <ul class="pagination" id="pagination"></ul>
+                <p style="display: none;">没有数据!</p>
             </div>
         </div>
     </div>
+
+    <script id="articleList" type="text/html">
+        <option value="">所有分类</option>
+        {{each data}}
+        <option value="{{$value.id}}">{{$value.name}}</option>
+        {{/each}}
+    </script>
+
+
+    <script id="acticleHtml" type="text/html">
+        {{each data.data}}
+        <tr>
+            <td>{{$value.title}}</td>
+            <td>{{$value.author}}</td>
+            <td>{{$value.category}}</td>
+            <td class="text-center">{{$value.date}}</td>
+            <td class="text-center">{{$value.state}}</td>
+            <td class="text-center">
+                <a href="article_edit.html" data-id="{{$value.id}}" class="btn btn-default btn-xs">编辑</a>
+                <a href="javascript:void(0);" data-id="{{$value.id}}" class="btn btn-danger btn-xs delete">删除</a>
+            </td>
+        </tr>
+        {{/each}}
+    </script>
+    </script>
+    <script src="./libs/http.js"></script>
+    <script>
+        $(function () {
+
+
+            //一:一进到页面就发送ajax获取文章分类
+            $.ajax({
+                type: 'get',
+                url: BigNew.category_list,
+                success: function (backData) {
+                    if (backData.code == 200) {
+                        var resHtml = template('articleList', backData);
+                        $('#selCategory').html(resHtml);
+                    }
+
+                }
+            });
+            var currentPage;
+
+            //封装
+            function getData(myPage, callback) {
+                $.ajax({
+                    type: 'get',
+                    url: BigNew.article_query,
+                    data: {
+                        type: $('#selCategory').val().trim(),
+                        state: $('#selStatus').val().trim(),
+                        page: myPage,
+                        perpage: 3
+                    },
+                    success: function (backData) {
+                        console.log(backData);
+
+                        if (backData.code == 200) {
+                            var resHtml = template(
+                                'acticleHtml', backData);
+                            $('tbody').html(resHtml);
+
+                            //回调函数
+                            if (backData.data.data.length != 0 && callback != null) {
+                                callback(backData);
+                                $('#pagination').show().next().hide();
+                            } else if (currentPage == 1 && backData.data.data.length == 0) {
+                                $('#pagination').hide().next().show();
+                            } else if (backData.data.totalPage == currentPage - 1 && backData.data.data.length == 0) {
+
+                                currentPage -= 1;
+                                $('#pagination').twbsPagination('changeTotalPages', backData.data
+                                    .totalPage, currentPage);
+                            }
+                        }
+
+                    }
+                });
+            };
+
+            //二: 一进到页面就获取所有文章
+            getData(1, function (backData) {
+                //获取成功后就生成分页插件
+                $('#pagination').twbsPagination({
+                    totalPages: backData.data.totalPage,
+                    visiblePages: 5,
+                    first: '首页',
+                    last: '尾页',
+                    prev: '上一页',
+                    next: '下一页',
+                    onPageClick: function (event, page) {
+                        // console.log(page);
+                        currentPage = page;
+                        getData(page, null)
+
+                    }
+                });
+            });
+
+
+            //三:筛选
+            $('#btnSearch').on('click', function (e) {
+                e.preventDefault();
+                getData(1, function (backData) {
+                    //获取成功后就生成分页插件
+                    $('#pagination').twbsPagination('changeTotalPages', backData.data.totalPage,
+                        1);
+                });
+            });
+
+
+            //四: 删除
+            $('tbody').on('click', 'a.delete', function (e) {
+                e.preventDefault();
+
+                if (confirm('确定要删除吗')) {
+                    var id = $(this).attr('data-id');
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.article_delete,
+                        data: {
+                            id: id
+                        },
+                        success: function (backData) {
+                            if (backData.code == 204) {
+                                alert('删除成功');
+                                getData(currentPage, function (backData) {
+                                    $('#pagination').twbsPagination(
+                                        'changeTotalPages', backData.data
+                                        .totalPage, currentPage);
+                                })
+                            }
+
+                        }
+                    });
+                }
+            });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //-----------------------------------------------------------------------
+            // //二:进页面获取第一页文章
+            // $.ajax({
+            //     type: 'get',
+            //     url: BigNew.article_query,
+            //     data: {
+            //         type: $('#selCategory').val().trim(),
+            //         state: $('#selStatus').val().trim(),
+            //         page: 1,
+            //         perpage: 5
+            //     },
+            //     success: function (backData) {
+            //         console.log(backData);
+
+            //         if (backData.code == 200) {
+            //             var resHtml = template('articleHtml', backData);
+            //             $('tbody').html(resHtml);
+
+            //             //分页插件
+            //             $('#pagination').twbsPagination({
+            //                 totalPages: backData.data.totalPage,
+            //                 visiblePages: 5,
+            //                 first: '首页',
+            //                 last: '尾页',
+            //                 prev: '上一页',
+            //                 next: '下一页',
+            //                 onPageClick: function (event, page) {
+            //                     $.ajax({
+            //                         type: 'get',
+            //                         url: BigNew.article_query,
+            //                         data: {
+            //                             type: $('#selCategory').val().trim(),
+            //                             state: $('#selStatus').val().trim(),
+            //                             page: page,
+            //                             perpage: 5
+            //                         },
+            //                         success: function (backData) {
+            //                             //console.log(backData);
+
+            //                             if (backData.code == 200) {
+            //                                 var resHtml = template(
+            //                                     'articleHtml', backData);
+            //                                 $('tbody').html(resHtml);
+
+            //                             }
+            //                         }
+            //                     });
+            //                 }
+            //             })
+            //         }
+            //     }
+            // });
+
+            // //三:筛选
+            // $('#btnSearch').on('click', function (e) {
+            //     e.preventDefault();
+            //     //console.log($('#selCategory').val().trim(),$('#selStatus').val().trim());
+
+            //     $.ajax({
+            //         type: 'get',
+            //         url: BigNew.article_query,
+            //         data: {
+            //             type: $('#selCategory').val().trim(),
+            //             state: $('#selStatus').val().trim(),
+            //             page: 1,
+            //             perpage: 5
+            //         },
+            //         success: function (backData) {
+            //             console.log(backData);
+
+            //             if (backData.code == 200) {
+            //                 var resHtml = template('articleHtml', backData);
+            //                 $('tbody').html(resHtml);
+            //                 $('#pagination').twbsPagination('changeTotalPages', backData
+            //                     .data.totalPage, 1)
+            //             };
+            //         }
+            //     });
+            // });
+
+
+
+        });
+    </script>
 </body>
 
 </html>
