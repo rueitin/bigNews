@@ -13,7 +13,7 @@
 
 <body>
     <div class="header">
-        <a href="#" class="logo fl"><img src="images/logo.png" alt="logo"></a>
+        <a href="./index.html" class="logo fl"><img src="images/logo.png" alt="logo"></a>
         <div class="search_form fl">
             <input type="text" class="search_txt" placeholder="黑洞照片">
             <button class="search_btn"><i class="fa fa-search"></i></button>
@@ -208,7 +208,125 @@
     <!-- 引入模板引擎js文件 -->
     <script src="./js/template-web.js"></script>
     <script src="./js/jquery-1.12.4.min.js"></script>
+    <!-- 列表 -->
+    <script id="category" type="text/html">
+        {{each data}}
+        <li><a href="./list.html?id={{$value.id}}">{{$value.name}}</a></li>
+        {{/each}}
+    </script>
 
+    <!-- 一周排行 -->
+    <script id="rank" type="text/html">
+        {{each data}}
+        <li>
+            {{if $index == 0}}
+            <span class="first">{{$index+1}}</span>
+            {{else if $index == 1}}
+            <span class="second">{{$index+1}}</span>
+            {{else if $index == 2}}
+            <span class="third">{{$index+1}}</span>
+            {{else}}
+            <span>{{$index+1}}</span>
+            {{/if}}
+            <a href="./article.html?id={{$value.id}}">{{$value.title}}</a>
+        </li>
+        {{/each}}
+    </script>
+
+    <!-- 最新评论 -->
+    <script id="comment" type="text/html">
+        {{each data}}
+        <li>
+            <span>{{$value.author.charAt(0)}}</span>
+            <b><em>{{$value.author}}</em> {{$value.date}} {{$value.time}}说:</b>
+            <strong>{{$value.intro}}</strong>
+        </li>
+        {{/each}}
+    </script>
+
+    <!-- 焦点关注 -->
+    <script id="attention" type="text/html">
+        {{each data}}
+        <li><a href="./article.html?id={{$value.id}}">{{$value.intro}}</a></li>
+        {{/each}}
+    </script>
+    <script>
+        $(function () {
+
+            //导航
+            $.ajax({
+                type: 'get',
+                url: 'http://localhost:8080/api/v1/index/category',
+                success: function (backData) {
+                    if (backData.code == 200) {
+                        var resHtml = template('category', backData);
+                        $('.level_two').html('<li class="up"></li>' + resHtml);
+
+
+                        $('.left_menu').html(resHtml);
+                    }
+
+                }
+            });
+
+            //一周热门排行
+            $.ajax({
+                type: 'get',
+                url: 'http://localhost:8080/api/v1/index/rank',
+                success: function (backData) {
+                    if (backData.code == 200) {
+                        //第一种做法
+                        // var resHtml = template('rank',backData);
+                        // $('.hotrank_list').html(resHtml);
+
+                        //第二种做法
+                        for (var i = 0; i < backData.data.length; i++) {
+                            $('.content_list>li').eq(i).children('a').text(backData.data[i].title);
+                            $('.content_list>li').eq(i).children('a').attr('href',
+                                './article.html?id=' + backData.data[i].id);
+                        }
+
+                    }
+
+                }
+            });
+
+            //最新评论
+            $.ajax({
+                type: 'get',
+                url: 'http://localhost:8080/api/v1/index/latest_comment',
+                success: function (backData) {
+                    if (backData.code == 200) {
+                        var resHtml = template('comment', backData);
+                        $('.comment_list').html(resHtml);
+                    }
+                }
+            });
+
+            //焦点关注
+            $.ajax({
+                type: 'get',
+                url: 'http://localhost:8080/api/v1/index/attention',
+                success: function (backData) {
+                    if (backData.code == 200) {
+                        var resHtml = template('attention', backData);
+                        $('.guanzhu_list').html(resHtml);
+                    }
+
+                }
+            });
+            //搜索
+
+            $('.search_btn').on('click', function () {
+                var searchText = $('.search_txt').val().trim();
+                if (searchText == '') {
+                    alert('请输入搜索内容');
+                    return;
+                };
+                window.location.href = './list.html?search=' + searchText;
+            });
+        });
+    </script>
 </body>
 
 </html>
