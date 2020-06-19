@@ -105,8 +105,7 @@
     <script>
         $(function () {
 
-
-            //一:一进到页面就发送ajax获取文章分类
+            //一: 一进页面就获取文章类别
             $.ajax({
                 type: 'get',
                 url: BigNew.category_list,
@@ -118,8 +117,8 @@
 
                 }
             });
+            //全局声明
             var currentPage;
-
             //封装
             function getData(myPage, callback) {
                 $.ajax({
@@ -133,23 +132,19 @@
                     },
                     success: function (backData) {
                         console.log(backData);
-
                         if (backData.code == 200) {
                             var resHtml = template(
                                 'acticleHtml', backData);
                             $('tbody').html(resHtml);
 
-                            //回调函数
                             if (backData.data.data.length != 0 && callback != null) {
+                                $('#pagination').show().next().hide()
                                 callback(backData);
-                                $('#pagination').show().next().hide();
                             } else if (currentPage == 1 && backData.data.data.length == 0) {
-                                $('#pagination').hide().next().show();
-                            } else if (backData.data.totalPage == currentPage - 1 && backData.data.data.length == 0) {
-
+                                $('#pagination').hide().next().show()
+                            }else if (backData.data.totalPage == currentPage -1 && backData.data.data.length == 0){
                                 currentPage -= 1;
-                                $('#pagination').twbsPagination('changeTotalPages', backData.data
-                                    .totalPage, currentPage);
+                                $('#pagination').twbsPagination('changeTotalPages', backData.data.totalPage,currentPage)
                             }
                         }
 
@@ -157,9 +152,8 @@
                 });
             };
 
-            //二: 一进到页面就获取所有文章
+            //    二:一进网页就获取所有文章
             getData(1, function (backData) {
-                //获取成功后就生成分页插件
                 $('#pagination').twbsPagination({
                     totalPages: backData.data.totalPage,
                     visiblePages: 5,
@@ -168,56 +162,44 @@
                     prev: '上一页',
                     next: '下一页',
                     onPageClick: function (event, page) {
-                        // console.log(page);
                         currentPage = page;
-                        getData(page, null)
-
+                        getData(page, null);
                     }
                 });
             });
 
 
-            //三:筛选
+
+
+            //三: 筛选
             $('#btnSearch').on('click', function (e) {
                 e.preventDefault();
-                getData(1, function (backData) {
-                    //获取成功后就生成分页插件
-                    $('#pagination').twbsPagination('changeTotalPages', backData.data.totalPage,
-                        1);
+                currentPage =1;
+                getData(currentPage, function (backData) {
+                    $('#pagination').twbsPagination('changeTotalPages', backData.data.totalPage,currentPage)
                 });
             });
 
-
-            //四: 删除
+            //删除
             $('tbody').on('click', 'a.delete', function (e) {
                 e.preventDefault();
-
-                if (confirm('确定要删除吗')) {
-                    var id = $(this).attr('data-id');
-                    $.ajax({
-                        type: 'post',
-                        url: BigNew.article_delete,
-                        data: {
-                            id: id
-                        },
-                        success: function (backData) {
-                            if (backData.code == 204) {
-                                alert('删除成功');
-                                getData(currentPage, function (backData) {
-                                    $('#pagination').twbsPagination(
-                                        'changeTotalPages', backData.data
-                                        .totalPage, currentPage);
-                                })
-                            }
-
+                var id = $(this).attr('data-id');
+                $.ajax({
+                    type: 'post',
+                    url: BigNew.article_delete,
+                    data: {
+                        id: id
+                    },
+                    success: function (backData) {
+                        if (backData.code == 204) {
+                            getData(currentPage, function (backData) {
+                                $('#pagination').twbsPagination('changeTotalPages',
+                                    backData.data.totalPage, currentPage)
+                            });
                         }
-                    });
-                }
+                    }
+                });
             });
-
-
-
-
 
 
 
