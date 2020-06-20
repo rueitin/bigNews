@@ -133,8 +133,7 @@
                     success: function (backData) {
                         console.log(backData);
                         if (backData.code == 200) {
-                            var resHtml = template(
-                                'acticleHtml', backData);
+                            var resHtml = template('acticleHtml', backData);
                             $('tbody').html(resHtml);
 
                             if (backData.data.data.length != 0 && callback != null) {
