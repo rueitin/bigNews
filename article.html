@@ -211,7 +211,7 @@
     <!-- 列表 -->
     <script id="category" type="text/html">
         {{each data}}
-        <li><a href="./list.html?id={{$value.id}}">{{$value.name}}</a></li>
+        <li><a href="./list.html?categoryId={{$value.id}}">{{$value.name}}</a></li>
         {{/each}}
     </script>
 
@@ -250,6 +250,23 @@
         <li><a href="./article.html?id={{$value.id}}">{{$value.intro}}</a></li>
         {{/each}}
     </script>
+
+    <!-- 发布-阅读-评论 -->
+    <script id="twoTitleTemp" type="text/html">
+        {{data.author}} 发布于 {{data.date}}&nbsp;&nbsp;&nbsp;分类: {{data.category}}&nbsp;&nbsp;&nbsp;阅读:
+        ({{data.read}})&nbsp;&nbsp;&nbsp;评论: ({{data.comments}})
+    </script>
+
+    <!-- 文章评论 -->
+    <script id="commentList" type="text/html">
+        {{each data}}
+        <div class="comment_detail_list">
+            <div class="person_pic fl">{{$value.author.charAt(0)}}</div>
+            <div class="name_time fl"><b>{{$value.author}}</b><span>{{$value.date}} {{$value.time}}</span></div>
+            <div class="comment_text fl">{{$value.content}}</div>
+        </div>
+        {{/each}}
+    </script>
     <script>
         $(function () {
 
@@ -268,6 +285,71 @@
 
                 }
             });
+           
+           
+            //文章
+            var id = window.location.search.split('=')[1];
+            $.ajax({
+                type: 'get',
+                url: 'http://localhost:8080/api/v1/index/article',
+                data: {
+                    id: id
+                },
+                success: function (backData) {
+                    if (backData.code == 200) {
+                        $('.breadcrumb>a:eq(1)').text(backData.data.category);
+                        $('.breadcrumb>a:eq(1)').attr('href', './list.html?categoryId=' + backData
+                            .data.categoryId);
+                        $('.article_title').text(backData.data.title);
+                        $('.article_con').html(backData.data.content);
+                        $('.article_info').html(template('twoTitleTemp', backData));
+
+                        //上一篇
+                        if (backData.data.prev) {
+                            $('.article_links>a:eq(0)').text(backData.data.prev.title);
+                            $('.article_links>a:eq(0)').attr('href', './article.html?id=' + backData
+                                .data.prev.id);
+                        } else {
+                            $('.article_links>a:eq(0)').text('没有上一篇');
+                            $('.article_links>a:eq(0)').attr('href', 'javascript:void(0);');
+                        }
+                        //下一篇
+                        if (backData.data.next) {
+                            //next有数据时,执行这里
+                            $('.article_links>a:eq(1)').text(backData.data.next.title);
+                            $('.article_links>a:eq(1)').attr('href', './article.html?id=' + backData
+                                .data.next.id);
+
+                        } else {
+                            //next为null时,执行这些                                    
+                            $('.article_links>a:eq(1)').text('没有下一篇');
+                            $('.article_links>a:eq(1)').attr('href', 'javascript:void(0);');
+                        }
+                    }
+
+                }
+            });
+
+            //文章评论
+            $.ajax({
+                type: 'get',
+                url: 'http://localhost:8080/api/v1/index/get_comment',
+                data: {
+                    articleId: id
+                },
+                success: function (backData) {
+                    console.log(backData);
+                    
+                    if(backData.code == 200){
+                        $('.comment_count').html(backData.data.length + ' 条评论');
+                        var resHtml = template('commentList',backData);
+                        $('.comment_list_con').html(resHtml);
+                    }
+
+                }
+
+            });
+
 
             //一周热门排行
             $.ajax({
